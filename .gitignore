@@ -40,3 +40,5 @@ vignettes/*.pdf
 
 /Input/*
 /other/*
+!/Input/.gitkeep
+!/other/.gitkeep
