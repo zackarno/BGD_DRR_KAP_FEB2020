@@ -7,7 +7,7 @@ library(readr)
 
 # Read_data ---------------------------------------------------------------
 
-data_path <- "Input/data/sample_data.csv"
+data_path <- "Input/24022020_DRR_KAP_Clean_data.csv"
 data <- read.csv(data_path)
 
 
