@@ -105,5 +105,8 @@ dfsvy$variables$X_26a_IF_YES_Where_was_it<-forcats::fct_expand(dfsvy$variables$X
 
 
 basic_analysis<-butteR::mean_proportion_table(design = dfsvy,list_of_variables = cols_to_analyze,aggregation_level = analysis_strata)
+basic_analysis_by_strata_and_gender<-butteR::mean_proportion_table(design = dfsvy,list_of_variables = cols_to_analyze,aggregation_level = c(analysis_strata,"X_6_Gender"))
+
+
 
 
