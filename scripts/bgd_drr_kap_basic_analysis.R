@@ -2,7 +2,7 @@ library(tidyverse)
 library(butteR)
 library(survey)
 library(srvyr)
-population<- c("host_community","refugee_commun")[1]
+population<- c("host_community","refugee_commun")[2]
 
 assess_survey<- readxl::read_xls("Input/tool/KAP_XLS.XLS",sheet = "survey")
 assess_choices<-readxl::read_xls("Input/tool/KAP_XLS.XLS",sheet = "choices")
@@ -77,11 +77,12 @@ dfsvy<-svydesign(ids = ~1,strata = formula(paste0("~",df_strata)),data = df2,wei
 # debugonce(butteR::questionnaire_factorize_categorical)
 # dfsvy$variables<- butteR::questionnaire_factorize_categorical(data = dfsvy$variables,questionnaire = assessment,return_full_data = T)
 #GET RID OF EMPTY COLUMNS AND OTHER COLUMNS
-
+colnames(df2) %>% dput()
 dont_analyze<-c("X_uuid", "start", "end", "X__1_Record_your_current_location_latitude", 
    "X__1_Record_your_current_location_longitude", "X_3_Survey_category", 
    "X_5_Age", "X_6_Gender", "Thana", "Area_village_street", "Camp_Number",
-   "sample_strata_num", "Upazila", "HH_pop", "sample_global", "pop_global", "survey_weight")
+   "sample_strata_num", "Upazila", "HH_pop", "sample_global", "pop_global", "survey_weight",
+   "Block", "Total.Families", "Total.Individuals")
 
 dont_analyze_in_data<-dont_analyze[dont_analyze %in% colnames(df2)]
 is_not_empty<-function(x){ all(is.na(x))==FALSE}
@@ -105,7 +106,9 @@ dfsvy$variables$X_26a_IF_YES_Where_was_it<-forcats::fct_expand(dfsvy$variables$X
 
 
 basic_analysis<-butteR::mean_proportion_table(design = dfsvy,list_of_variables = cols_to_analyze,aggregation_level = analysis_strata)
+
 basic_analysis_by_strata_and_gender<-butteR::mean_proportion_table(design = dfsvy,list_of_variables = cols_to_analyze,aggregation_level = c(analysis_strata,"X_6_Gender"))
+
 
 
 
