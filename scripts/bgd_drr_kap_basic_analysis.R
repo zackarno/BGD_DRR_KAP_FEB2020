@@ -68,7 +68,7 @@ sf_with_weights<-df %>%
   right_join(pop, by=setNames(sf_strata,df_strata)) %>% 
   mutate(sample_global=sum(sample_strata_num),
          pop_global=sum(!!sym(sf_pop)),
-         survey_weight= (sample_strata_num/sample_global)/(!!sym(sf_pop)/pop_global)
+         survey_weight= (!!sym(sf_pop)/pop_global)/(sample_strata_num/sample_global)
   )
 
 
