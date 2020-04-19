@@ -2,17 +2,21 @@ library(tidyverse)
 library(butteR)
 library(survey)
 library(srvyr)
+library(dplyr)
+# library(koboquest)
+
 population<- c("host_community","refugee_commun")[2]
 
 assess_survey<- readxl::read_xls("Input/tool/KAP_XLS.XLS",sheet = "survey")
 assess_choices<-readxl::read_xls("Input/tool/KAP_XLS.XLS",sheet = "choices")
 
 df<-read.csv("Input/data/25022020_DRR_KAP_Recoded_forButter.csv", stringsAsFactors = F, na.strings = c(""," ", "NA",NA),strip.white = T)
+
 dfs<-split(df, df$X_3_Survey_category)
+
 df<-dfs[[population]]
 
 
-assessment<-koboquest::load_questionnaire(data = df,questions = assess_survey,choices = assess_choices,choices.label.column.to.use = "label::English (Eng)")
 if(population=="host_community"){
   df_strata<-"Area_village_street"
   sf_strata<-"Union"
@@ -56,7 +60,6 @@ if(population== "refugee_commun") {
     #   
     # )
   
-  
 }
 
 sf_with_weights<-df %>% 
@@ -65,13 +68,13 @@ sf_with_weights<-df %>%
   right_join(pop, by=setNames(sf_strata,df_strata)) %>% 
   mutate(sample_global=sum(sample_strata_num),
          pop_global=sum(!!sym(sf_pop)),
-         survey_weight= (sample_strata_num/sample_global)/(!!sym(sf_pop)/pop_global)
+         survey_weight= (!!sym(sf_pop)/pop_global)/(sample_strata_num/sample_global)
   )
 
 
 df2<-df %>% left_join(sf_with_weights)
 
-#DEFINE SURVEY OBJECT
+# DEFINE SURVEY OBJECT
 dfsvy<-svydesign(ids = ~1,strata = formula(paste0("~",df_strata)),data = df2,weights = formula(paste0("~", "survey_weight")))
 #THIS ADDS FACTOR LEVELS FROM TOOL
 # debugonce(butteR::questionnaire_factorize_categorical)
@@ -82,7 +85,7 @@ dont_analyze<-c("X_uuid", "start", "end", "X__1_Record_your_current_location_lat
    "X__1_Record_your_current_location_longitude", "X_3_Survey_category", 
    "X_5_Age", "X_6_Gender", "Thana", "Area_village_street", "Camp_Number",
    "sample_strata_num", "Upazila", "HH_pop", "sample_global", "pop_global", "survey_weight",
-   "Block", "Total.Families", "Total.Individuals")
+   "Total.Families", "Total.Individuals")
 
 dont_analyze_in_data<-dont_analyze[dont_analyze %in% colnames(df2)]
 is_not_empty<-function(x){ all(is.na(x))==FALSE}
@@ -90,7 +93,6 @@ is_not_empty<-function(x){ all(is.na(x))==FALSE}
 
 cols_to_analyze<-df2 %>% select(-starts_with("Other"), -ends_with(".other")) %>%
   select_if(.,is_not_empty) %>% select(-dont_analyze_in_data) %>% colnames() 
-
 
 
 
@@ -104,12 +106,23 @@ dfsvy$variables$X_42a_If_YES_how_can_you_reco.don_t_know_what_they_look_like<- f
 dfsvy$variables$X_20_Just_before_a_cyclone_arri.cic<- forcats::fct_expand(dfsvy$variables$X_20_Just_before_a_cyclone_arri.cic,c( "0", "1"))
 dfsvy$variables$X_26a_IF_YES_Where_was_it<-forcats::fct_expand(dfsvy$variables$X_20_Just_before_a_cyclone_arri.cic,c( "bangladesh", "myanmar"))
 
+basic_analysis_overall<-butteR::mean_proportion_table(design = dfsvy,list_of_variables = cols_to_analyze)
 
-basic_analysis<-butteR::mean_proportion_table(design = dfsvy,list_of_variables = cols_to_analyze,aggregation_level = analysis_strata)
+basic_analysis_strata<-butteR::mean_proportion_table(design = dfsvy,list_of_variables = cols_to_analyze,aggregation_level = analysis_strata)
 
-basic_analysis_by_strata_and_gender<-butteR::mean_proportion_table(design = dfsvy,list_of_variables = cols_to_analyze,aggregation_level = c(analysis_strata,"X_6_Gender"))
-
-
-
+basic_analysis_by_gender<-butteR::mean_proportion_table(design = dfsvy,list_of_variables = cols_to_analyze,aggregation_level = c("X_6_Gender"))
 
 
+if (population == "host_community") {
+output_folder <- "output/host/"
+write.csv(basic_analysis_overall,paste0(output_folder,"basic_analysis_overall_host.csv"))
+  write.csv(basic_analysis_strata,paste0(output_folder,"basic_analysis_strata_host.csv"))
+  write.csv(basic_analysis_by_gender,paste0(output_folder,"basic_analysis_by_gender_host.csv"))
+}
+
+if (population == "refugee_commun") {
+  output_folder <- "output/refugee/"
+  write.csv(basic_analysis_overall,paste0(output_folder,"basic_analysis_overall_ref.csv"))
+  write.csv(basic_analysis_strata,paste0(output_folder,"basic_analysis_strata_ref.csv"))
+  write.csv(basic_analysis_by_gender,paste0(output_folder,"basic_analysis_by_gender_ref.csv"))
+}
